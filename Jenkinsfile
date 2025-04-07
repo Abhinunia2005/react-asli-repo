@@ -2,122 +2,94 @@ pipeline {
     agent any
 
     environment {
-        AZURE_CREDENTIALS_ID = 'fake-sp'
-        RESOURCE_GROUP = 'fake-rg'
-        APP_SERVICE_NAME = 'fakeapp123456'
+        AZURE_CREDENTIALS_ID = 'jenkins-sp'
+        RESOURCE_GROUP = 'rg-react'
+        APP_SERVICE_NAME = 'reactwebappjenkins838796'
     }
 
     stages {
-        stage('Declarative: Checkout SCM') {
-            steps {
-                echo """
-Checking out code from Git...
-> git fetch --tags --progress -- 
-> git checkout main
-"""
-                sleep 12
-            }
-        }
-
         stage('Checkout Code') {
             steps {
-                echo """
-> git clone https://github.com/fakeuser/fake-repo.git
-Cloning into 'fake-repo'...
-remote: Enumerating objects: 42, done.
-remote: Counting objects: 100% (42/42), done.
-"""
-                sleep 15
+                git branch: 'main', url: 'https://github.com/PawanK7390/react-azure-deploy.git'
             }
         }
 
         stage('Terraform Init') {
             steps {
-                echo """
-Initializing the backend...
-Successfully configured the backend "azurerm"!
-Terraform has been successfully initialized!
-"""
-                sleep 8
+                dir('terraform') {
+                    bat 'terraform init || exit /b'
+                }
             }
         }
 
         stage('Terraform Import') {
             steps {
-                echo """
-terraform import azurerm_app_service.example /subscriptions/xxx/resourceGroups/fake-rg/providers/Microsoft.Web/sites/fakeapp123
-azurerm_app_service.example: Importing from ID...
-azurerm_app_service.example: Import prepared!
-azurerm_app_service.example: Reading...
-azurerm_app_service.example: Import successful!
-"""
-                sleep 30
+                dir('terraform') {
+                    bat '''
+                        terraform import azurerm_resource_group.rg "/subscriptions/eea7dd66-806c-47a7-912f-2e3f1af71f5e/resourceGroups/rg-react" || exit /b
+                        terraform import azurerm_service_plan.asp "/subscriptions/eea7dd66-806c-47a7-912f-2e3f1af71f5e/resourceGroups/rg-react/providers/Microsoft.Web/serverFarms/react-app-plan" || exit /b
+                        terraform import azurerm_linux_web_app.react_app "/subscriptions/eea7dd66-806c-47a7-912f-2e3f1af71f5e/resourceGroups/rg-react/providers/Microsoft.Web/sites/reactwebappjenkins838796" || exit /b
+                    '''
+                }
             }
         }
 
         stage('Terraform Plan & Apply') {
             steps {
-                echo """
-terraform plan
-Plan: 2 to add, 0 to change, 0 to destroy.
-terraform apply -auto-approve
-Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
-"""
-                sleep 112
+                dir('terraform') {
+                    bat 'terraform plan -out=tfplan || exit /b'
+                    bat 'terraform apply -auto-approve tfplan || exit /b'
+                }
             }
         }
 
         stage('Install Dependencies & Build React') {
             steps {
-                echo """
-> npm install
-added 120 packages, audited 120 packages in 4s
-
-> npm run build
-Compiled successfully in 31s
-"""
-                sleep 92
+                bat 'npm install || exit /b'
+                bat 'npm run build || exit /b'
             }
         }
 
         stage('Check Build Folder') {
             steps {
-                echo """
-Checking for 'build' folder...
-✅ Build folder exists
-"""
-                sleep 58
+                script {
+                    def buildExists = fileExists('build\\index.html')
+                    if (!buildExists) {
+                        error("Build folder missing or empty. Make sure 'npm run build' succeeded.")
+                    }
+                }
             }
         }
 
         stage('Deploy to Azure using az webapp deploy') {
             steps {
-                echo """
-> az webapp deploy --src-path build.zip --name fakeapp123456
-Uploading build.zip...
-Deployment completed successfully 🎉
-"""
-                sleep 120
-            }
-        }
+                withCredentials([azureServicePrincipal(credentialsId: "${AZURE_CREDENTIALS_ID}")]) {
+                    bat 'echo Logging into Azure...'
+                    bat 'az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%'
+                    bat 'az account set --subscription %AZURE_SUBSCRIPTION_ID%'
 
-        stage('Declarative: Post Actions') {
-            steps {
-                echo """
-Cleaning up workspace...
-Sending notifications...
-"""
-                sleep 50
+                    bat 'az webapp config appsettings set --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false'
+                    bat 'az webapp config appsettings set --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=true'
+
+                    bat 'echo Deploying React app using build/ folder...'
+                    bat 'az webapp deploy --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME% --src-path build --type static || exit /b'
+
+                    bat 'echo Restarting App Service...'
+                    bat 'az webapp restart --resource-group %RESOURCE_GROUP% --name %APP_SERVICE_NAME%'
+                }
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline finished successfully'
+            echo ' React App Deployed Successfully using az webapp deploy!'
+        }
+        failure {
+            echo ' Deployment Failed. Check logs and troubleshoot.'
         }
         always {
-            echo 'Cleanup done'
+            cleanWs()
         }
     }
 }
