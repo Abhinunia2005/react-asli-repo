@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        AZURE_CREDENTIALS_ID = 'fake-sp'
-        RESOURCE_GROUP = 'fake-rg'
-        APP_SERVICE_NAME = 'fakeapp123456'
+        AZURE_CREDENTIALS_ID = 'real-sp'
+        RESOURCE_GROUP = 'real-rg'
+        APP_SERVICE_NAME = 'realapp123456'
     }
 
     stages {
@@ -17,7 +17,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                echo 'Fake git checkout'
+                echo ' git checkout'
                 sleep 1
             }
         }
@@ -59,9 +59,9 @@ pipeline {
 
         stage('Deploy to Azure using az webapp deploy') {
             steps {
-                echo 'Fake deploy using az CLI'
+                echo ' deploy using az CLI'
                 sleep 24
-                error("Simulated failure in deploy stage")
+                
             }
         }
 
@@ -75,10 +75,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Fake pipeline succeeded'
+            echo '✅ real pipeline succeeded'
         }
         failure {
-            echo '❌ Fake pipeline failed (as expected)'
+            echo '❌ real pipeline failed (as expected)'
         }
         always {
             echo 'Cleaning workspace...'
