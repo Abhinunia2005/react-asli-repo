@@ -15,7 +15,7 @@ Checking out code from Git...
 > git fetch --tags --progress -- 
 > git checkout main
 """
-                sleep 1
+                sleep 12
             }
         }
 
@@ -27,7 +27,7 @@ Cloning into 'fake-repo'...
 remote: Enumerating objects: 42, done.
 remote: Counting objects: 100% (42/42), done.
 """
-                sleep 1
+                sleep 15
             }
         }
 
@@ -51,7 +51,7 @@ azurerm_app_service.example: Import prepared!
 azurerm_app_service.example: Reading...
 azurerm_app_service.example: Import successful!
 """
-                sleep 8
+                sleep 30
             }
         }
 
@@ -63,7 +63,7 @@ Plan: 2 to add, 0 to change, 0 to destroy.
 terraform apply -auto-approve
 Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
 """
-                sleep 8
+                sleep 112
             }
         }
 
@@ -76,7 +76,7 @@ added 120 packages, audited 120 packages in 4s
 > npm run build
 Compiled successfully in 31s
 """
-                sleep 8
+                sleep 92
             }
         }
 
@@ -86,7 +86,7 @@ Compiled successfully in 31s
 Checking for 'build' folder...
 ✅ Build folder exists
 """
-                sleep 1
+                sleep 58
             }
         }
 
@@ -97,7 +97,7 @@ Checking for 'build' folder...
 Uploading build.zip...
 Deployment completed successfully 🎉
 """
-                sleep 6
+                sleep 120
             }
         }
 
@@ -107,7 +107,7 @@ Deployment completed successfully 🎉
 Cleaning up workspace...
 Sending notifications...
 """
-                sleep 2
+                sleep 50
             }
         }
     }
