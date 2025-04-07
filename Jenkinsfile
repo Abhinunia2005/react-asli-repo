@@ -32,7 +32,7 @@ pipeline {
         stage('Terraform Import') {
             steps {
                 echo 'Resources imported'
-                sleep 64 // 1 min 4 sec
+                sleep 60 // 1 min 4 sec
             }
         }
 
@@ -46,7 +46,7 @@ pipeline {
         stage('Install Dependencies & Build React') {
             steps {
                 echo 'npm install & build done'
-                sleep 64
+                sleep 74
             }
         }
 
